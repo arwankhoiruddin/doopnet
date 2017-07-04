@@ -7,11 +7,11 @@ Doopnet
 * Require: Docker Engine and Docker image Ubuntu-14.04
 
 #### Doopnet is based on Containernet (formerly called Dockernet) and Hadoop 2.7.1 
-* Containernet: https://github.com/mpeuster/containernet (Manuel Peuster, Holger Karl, and Steven van Rossem. "MeDICINE: Rapid Prototyping of Production-Ready Network Services in Multi-PoP Environments." in IEEE Conference on Network Function Virtualization and Software Defined Network (NFV-SDN), 2016. Link: http://ieeexplore.ieee.org/document/7919490/)
+* Containernet: https://github.com/mpeuster/containernet (Ref: Manuel Peuster, Holger Karl, and Steven van Rossem. "MeDICINE: Rapid Prototyping of Production-Ready Network Services in Multi-PoP Environments." in IEEE Conference on Network Function Virtualization and Software Defined Network (NFV-SDN), 2016. Link: http://ieeexplore.ieee.org/document/7919490/)
 * Hadoop: http://hadoop.apache.org/
 * **Note:** Doopnet requires a snapshot of Containernet (containernet.patch is based on the release on 16 Dec 2015). Hadoop-2.7.1 will be downloaded automatically.  
 
-## Reference
+## Reference to this work
 For Doopnet design details, please check the paper below. Please cite this paper if you use Doopnet in your work. 
 * Yuansong Qiao, Xueyuan Wang, Guiming Fang, Brian Lee, "Doopnet: An emulator for network performance analysis of Hadoop clusters using Docker and Mininet", IEEE Symposium on Computers and Communication (ISCC), 2016. http://ieeexplore.ieee.org/document/7543832/
 
