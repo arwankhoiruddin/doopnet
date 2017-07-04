@@ -7,7 +7,7 @@ Doopnet
 * Require: Docker Engine and Docker image Ubuntu-14.04
 
 #### Doopnet is based on Containernet (formerly called Dockernet) and Hadoop 2.7.1 
-* Containernet: https://github.com/mpeuster/containernet
+* Containernet: https://github.com/mpeuster/containernet (Manuel Peuster, Holger Karl, and Steven van Rossem. "MeDICINE: Rapid Prototyping of Production-Ready Network Services in Multi-PoP Environments." in IEEE Conference on Network Function Virtualization and Software Defined Network (NFV-SDN), 2016. Link: http://ieeexplore.ieee.org/document/7919490/)
 * Hadoop: http://hadoop.apache.org/
 * **Note:** Doopnet requires a snapshot of Containernet (containernet.patch is based on the release on 16 Dec 2015). Hadoop-2.7.1 will be downloaded automatically.  
 
