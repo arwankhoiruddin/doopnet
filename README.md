@@ -11,7 +11,7 @@ Doopnet
 * Hadoop: http://hadoop.apache.org/
 * **Note:** Doopnet requires a snapshot of Containernet (containernet.patch is based on the release on 16 Dec 2015). Hadoop-2.7.1 will be downloaded automatically.  
 
-## Reference to this work
+## Reference to this Work
 For Doopnet design details, please check the paper below. Please cite this paper if you use Doopnet in your work. 
 * Yuansong Qiao, Xueyuan Wang, Guiming Fang, Brian Lee, "Doopnet: An emulator for network performance analysis of Hadoop clusters using Docker and Mininet", IEEE Symposium on Computers and Communication (ISCC), 2016. http://ieeexplore.ieee.org/document/7543832/
 
