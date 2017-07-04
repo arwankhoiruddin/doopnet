@@ -1,0 +1,16 @@
+#!/bin/bash
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+HDUSER_PREFIX=/home/hduser
+RUN_DIR=${HDUSER_PREFIX}/netflow/run
+DATA_DIR=${HDUSER_PREFIX}/netflow/data
+
+NODE_ID=$(hostname)
+echo -e "\nRemoving netflow in host $NODE_ID..."
+
+if [ "$(ls $DATA_DIR)" ] ; then
+	rm -rf $DATA_DIR/* 2>/dev/null
+fi
+

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 <the base folder to save netflow records> <host 1-n>... \n"
+	exit 1
+}
+
+######
+
+[ $# -le 1 ] && usage
+DST_DIR_ROOT=$1
+shift
+HOSTS=$*
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+for h in $HOSTS ; do
+	echo -e "\nStarting in $h ..."
+	pdsh -R ssh -w $h "$SCRIPTS_HOME/host-node-start-netflow $DST_DIR_ROOT"
+done
+

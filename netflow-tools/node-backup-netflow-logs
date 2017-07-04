@@ -1,0 +1,35 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 <dst folder name (will be placed under /mnt/host-exchange)>\n"
+	exit 1
+}
+
+[ $# != 1 ] && usage
+
+#####################################
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+HOST_EXCHANGE_DIR="/mnt/host-exchange"
+DST_DIR_ROOT=$HOST_EXCHANGE_DIR/$1
+
+if [ ! -e $HOST_EXCHANGE_DIR ] || [ $(mount | grep -c /mnt) -lt 1 ] ; then
+	echo -e "\nError: $HOST_EXCHANGE_DIR doesn't exist!"
+	echo -e "       It should be mounted while starting the container.\n" 
+	exit 1
+fi
+
+NODE_ID=$(hostname)
+
+HDUSER_PREFIX=/home/hduser
+DATA_DIR=$HDUSER_PREFIX/netflow/data
+DST_DIR=$DST_DIR_ROOT/$NODE_ID/netflow/data
+
+[ -e $DST_DIR ] && echo -e "\nError: $DST_DIR exists!\n" && exit 1
+
+echo -e "\nBacking up netflow data to $DST_DIR in host $NODE_ID"
+mkdir -p $DST_DIR
+cp -a $DATA_DIR/* $DST_DIR 
+

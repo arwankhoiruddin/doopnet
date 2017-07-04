@@ -1,0 +1,7 @@
+FROM ubuntu:14.04
+RUN mkdir -p /home/doopnet
+COPY doopnet.tgz /home/doopnet
+RUN tar xzf /home/doopnet/doopnet.tgz -C /home/doopnet
+RUN rm -f /home/doopnet/doopnet.tgz
+RUN /bin/bash /home/doopnet/container-setup/setup-hadoop-container.sh
+CMD /bin/bash

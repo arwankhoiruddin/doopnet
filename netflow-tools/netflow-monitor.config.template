@@ -1,0 +1,11 @@
+##################################
+# Setup Netflow parameters       #
+# These variables are used in:   #
+# - node-start-netflow           #
+# - host-node-start-netflow      #
+# Parameter Unit: seconds        #
+##################################
+NETFLOW_ACTIVE_FLOW_LIFETIME=300
+NFCAPD_FILE_ROTATE_INTERVAL=300
+##################################
+

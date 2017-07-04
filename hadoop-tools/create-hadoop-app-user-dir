@@ -1,0 +1,25 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 [<user to run Hadoop application, default: root>]\n"
+	exit 1
+}
+
+######
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+HDUSER_PREFIX=/home/hduser
+HADOOP_PREFIX=$HDUSER_PREFIX/hadoop
+HADOOP_BIN=$HADOOP_PREFIX/bin
+HADOOP_SBIN=$HADOOP_PREFIX/sbin
+HADOOP_CONF_DIR=$HADOOP_PREFIX/etc/hadoop
+
+USER="root"
+[ $# = 1 ] && USER=$1
+
+$SCRIPTS_HOME/node-hdfs dfs -mkdir -p /user/$USER
+
+$SCRIPTS_HOME/node-hdfs dfs -chown $USER:$USER /user/$USER
+

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+tmplist="/tmp/stop-netflow.hosts"
+>$tmplist
+cat /etc/hosts | while read ip name ; do
+	[ -z "$name" ] && continue
+	[ "$name" = "localhost" ] && continue
+	echo $name >> $tmplist
+done
+
+pdsh -R ssh -w  ^$tmplist $SCRIPTS_HOME/node-stop-netflow
+
+rm -f $tmplist
+

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+
+$SCRIPTS_HOME/cluster-start-dfs
+
+$SCRIPTS_HOME/cluster-start-yarn
+

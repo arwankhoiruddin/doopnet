@@ -1,0 +1,32 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 [-u <user name, default: hdfs>] <hdfs commands>"
+	echo -e "Usage: $0 -h | --help\n"
+	exit 1
+}
+
+###############
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+HDUSER_PREFIX=/home/hduser
+HADOOP_PREFIX=$HDUSER_PREFIX/hadoop
+HADOOP_BIN=$HADOOP_PREFIX/bin
+HADOOP_SBIN=$HADOOP_PREFIX/sbin
+HADOOP_CONF_DIR=$HADOOP_PREFIX/etc/hadoop
+
+HDFS_USER=hdfs
+case "$1" in
+"-u")
+	HDFS_USER=$2
+	shift 2
+	;;
+"-h" | "--help")
+	usage
+	;;
+esac
+
+su -l $HDFS_USER -c "HADOOP_PREFIX=$HADOOP_PREFIX $HADOOP_BIN/hdfs --config $HADOOP_CONF_DIR $*"
+

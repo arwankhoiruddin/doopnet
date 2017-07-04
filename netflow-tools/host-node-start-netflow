@@ -1,0 +1,42 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 <The base folder to save netflow records>\n"
+	exit 1
+}
+
+######################################
+
+[ $# != 1 ]  && usage
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+NFCAPD_FILE_ROTATE_INTERVAL=300
+NETFLOW_ACTIVE_FLOW_LIFETIME=300
+
+NETFLOW_MONITOR_CONFIG=$SCRIPTS_HOME/netflow-monitor.config
+[ -e $NETFLOW_MONITOR_CONFIG ] && . $NETFLOW_MONITOR_CONFIG
+
+DST_DIR_ROOT=$1
+
+HOST_ID=$(hostname)
+SWITCHES=$($SCRIPTS_HOME/get-switch-names)
+[ -z "$SWITCHES" ] && echo -e "\nError: Cannot find Mininet switches\n" && exit 1
+
+NFCAPD_PORT_START=9001
+NFCAPD_PORT=$NFCAPD_PORT_START
+
+for s in $SWITCHES ; do
+	echo -e "\nSetting up switch $i on host $HOST_ID ..."
+	RUN_DIR=$DST_DIR_ROOT/$HOST_ID/$s/netflow/run
+	DATA_DIR=$DST_DIR_ROOT/$HOST_ID/$s/netflow/data
+	mkdir -p $RUN_DIR
+	mkdir -p $DATA_DIR
+	nfcapd -w -D -p $NFCAPD_PORT -t $NFCAPD_FILE_ROTATE_INTERVAL -P $RUN_DIR/nfcapd.$s.pid -I $HOST_ID-$s -l $DATA_DIR
+	#nfcapd -w -D -p $PORT -B 2000 -t 60 -P $RUN_DIR/nfcapd.s${i}.pid.${HOST_ID} -I mininet-s${i} -l $DATA_DIR
+	ovs-vsctl -- set Bridge $s netflow=@nf$s -- --id=@nf$s create NetFlow target="\"127.0.0.1:$NFCAPD_PORT\"" active-timeout=$NETFLOW_ACTIVE_FLOW_LIFETIME
+	NFCAPD_PORT=$(expr $NFCAPD_PORT + 1)
+done
+
+

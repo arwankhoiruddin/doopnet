@@ -1,0 +1,21 @@
+#!/bin/bash
+
+doSSHSetup() {
+	[ -e ~/.ssh/known_hosts ] && cp ~/.ssh/known_hosts ~/.ssh/known_hosts.doopnet.backup
+
+	cat /etc/hosts | 
+	while read HOST_IP HOST_NAME ; do
+		[ -z "$HOST_IP" ] && continue
+		ssh-keyscan -H $HOST_NAME >> ~/.ssh/known_hosts
+		ssh-keyscan -H $HOST_IP >> ~/.ssh/known_hosts
+	done
+}
+
+export -f doSSHSetup
+
+#su hdfs -c "bash -c doSSHSetup"
+#su yarn -c "bash -c doSSHSetup"
+#su mapred -c "bash -c doSSHSetup"
+su root -c "bash -c doSSHSetup"
+
+

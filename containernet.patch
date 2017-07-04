@@ -1,0 +1,189 @@
+diff -r -u containernet/mininet/net.py dockernet/mininet/net.py
+--- containernet/mininet/net.py	2017-07-04 12:34:27.106971544 +0100
++++ dockernet/mininet/net.py	2017-07-04 12:01:38.214574152 +0100
+@@ -112,13 +112,13 @@
+ 
+ class Mininet( object ):
+     "Network emulation with hosts spawned in network namespaces."
+-
++    # QYS: /etc/hosts, hostname, doopnet folder
+     def __init__( self, topo=None, switch=OVSKernelSwitch, host=Host,
+                   controller=DefaultController, link=Link, intf=Intf,
+                   build=True, xterms=False, cleanup=False, ipBase='10.0.0.0/8',
+                   inNamespace=False,
+                   autoSetMacs=False, autoStaticArp=False, autoPinCpus=False,
+-                  listenPort=None, waitConnected=False ):
++                  listenPort=None, waitConnected=False, etcHostsFile=None, doopnetFolder=None ):
+         """Create Mininet object.
+            topo: Topo (topology) object or None
+            switch: default Switch class
+@@ -155,6 +155,15 @@
+         self.nextCore = 0  # next core for pinning hosts to CPUs
+         self.listenPort = listenPort
+         self.waitConn = waitConnected
++        
++        # QYS: The file to save IP to hostname mapping
++        self.etcHostsFile = etcHostsFile
++        if self.etcHostsFile is not None:
++            self.hostsOut = open(self.etcHostsFile, 'w')
++            self.hostsOut.write('127.0.0.1\tlocalhost\n')
++            self.hostsOut.close()
++        # QYS: The doopnet folder on the host, which will be mount to /home/doopnet in the container
++        self.doopnetFolder = doopnetFolder
+ 
+         self.hosts = []
+         self.switches = []
+@@ -170,7 +179,6 @@
+         self.built = False
+         if topo and build:
+             self.build()
+-
+     def waitConnected( self, timeout=None, delay=.5 ):
+         """wait for each switch to connect to a controller,
+            up to 5 seconds
+@@ -250,7 +258,9 @@
+         Wrapper for addHost method that adds a
+         Docker container as a host.
+         """
+-        return self.addHost( name, cls=Docker, **params)
++        
++        # QYS: for etc/hosts, doopnet folder
++        return self.addHost( name, cls=Docker, etcHostsFile=self.etcHostsFile, doopnetFolder=self.doopnetFolder, **params)
+ 
+     def removeDocker( self, name, **params):
+         """
+@@ -594,6 +604,9 @@
+         for host in self.hosts:
+             info( host.name + ' ' )
+             host.terminate()
++        # QYS: for /etc/hosts
++        if self.etcHostsFile is not None:
++            os.remove(self.etcHostsFile)
+         info( '\n*** Done\n' )
+ 
+     def run( self, test, *args, **kwargs ):
+diff -r -u containernet/mininet/node.py dockernet/mininet/node.py
+--- containernet/mininet/node.py	2017-07-04 12:34:27.106971544 +0100
++++ dockernet/mininet/node.py	2017-07-04 12:01:38.214574152 +0100
+@@ -644,13 +644,28 @@
+     http://techandtrains.com/2014/08/21/docker-container-as-mininet-host/
+     We use the docker-py client library to control docker.
+     """
+-
+-    def __init__(self, name, dimage, dcmd=None, **kwargs):
++    # QYS: /etc/hosts, hostname
++    def __init__(self, name, dimage, dcmd=None, hostExchangeFolder=None, etcHostsFile=None, doopnetFolder=None, **kwargs):
+         self.dimage = dimage
+         self.dnameprefix = "mn"
+         self.dcmd = dcmd if dcmd is not None else "/bin/bash"
+         self.dc = None  # pointer to the container
+-
++        
++        # QYS: the folder for exchanging data between docker container and host
++        self.hostExchangeFolder = hostExchangeFolder
++        
++        # QYS: etc/hosts
++        self.etcHostsFile = etcHostsFile
++        self.hostname = name
++        self.ip = kwargs['ip']
++        
++        if self.etcHostsFile is not None:
++            self.hostsOut = open(self.etcHostsFile, 'a')
++            self.hostsOut.write('%s\t%s\n' % (self.ip, self.hostname))
++            self.hostsOut.close()
++        # QYS: doopnet foler
++        self.doopnetFolder = doopnetFolder
++        
+         # setup docker client
+         self.dcli = docker.Client(base_url='unix://var/run/docker.sock')
+ 
+@@ -665,21 +680,62 @@
+     def startShell( self, mnopts=None ):
+         # creats host config for container
+         # see: https://docker-py.readthedocs.org/en/latest/hostconfig/
+-        hc = self.dcli.create_host_config(
+-            network_mode=None,
+-            privileged=True  # we need this mode to allow mininet network setup
+-        )
++        # QYS: mount etcHostFile to /etc/hosts in container
++        #      mount doopnet to /home/doopnet
++        self.binds = {}
++        self.volumes = []
++        if self.etcHostsFile is not None:
++            self.binds = {self.etcHostsFile: {'bind': '/etc/hosts', 'mode': 'rw'}}
++            self.volumes.append('/etc/hosts')
++            
++        if self.doopnetFolder is not None:
++            self.binds[self.doopnetFolder] = {'bind': '/home/doopnet', 'mode': 'rw'}
++            self.volumes.append('/home/doopnet')
++
++        if self.hostExchangeFolder is not None:
++            self.binds[self.hostExchangeFolder] = {'bind': '/mnt/host-exchange', 'mode': 'rw'}
++            self.volumes.append('/mnt/host-exchange')
++        
++        if self.binds:    
++            hc = self.dcli.create_host_config(
++                binds=self.binds,
++                network_mode=None,
++                privileged=True  # we need this mode to allow mininet network setup
++            )
++        else:
++            hc = self.dcli.create_host_config(
++                network_mode=None,
++                privileged=True  # we need this mode to allow mininet network setup
++            )
++            
+         # create new docker container
+-        self.dc = self.dcli.create_container(
+-            name="%s.%s" % (self.dnameprefix, self.name),
+-            image=self.dimage,
+-            command=self.dcmd,
+-            stdin_open=True,  # keep container open
+-            tty=True,  # allocate pseudo tty
+-            environment={"PS1": chr(127)},  # does not seem to have an effect
+-            network_disabled=True,  # we will do network on our own
+-            host_config=hc
+-        )
++        # QYS: /mnt/hostExchangeFolder, /etc/hosts, hostname, doopnet
++        if self.volumes:
++            self.dc = self.dcli.create_container(
++                hostname=self.hostname,
++                volumes=self.volumes,
++                name="%s.%s" % (self.dnameprefix, self.name),
++                image=self.dimage,
++                command=self.dcmd,
++                stdin_open=True,  # keep container open
++                tty=True,  # allocate pseudo tty
++                environment={"PS1": chr(127)},  # does not seem to have an effect
++                network_disabled=True,  # we will do network on our own
++                host_config=hc
++                )
++        else:
++            self.dc = self.dcli.create_container(
++                hostname=self.hostname,
++                name="%s.%s" % (self.dnameprefix, self.name),
++                image=self.dimage,
++                command=self.dcmd,
++                stdin_open=True,  # keep container open
++                tty=True,  # allocate pseudo tty
++                environment={"PS1": chr(127)},  # does not seem to have an effect
++                network_disabled=True,  # we will do network on our own
++                host_config=hc
++                )
++            
+         # start the container
+         self.dcli.start(self.dc)
+         debug("Docker container %s started\n" % self.name)
+diff -r -u containernet/util/install.sh dockernet/util/install.sh
+--- containernet/util/install.sh	2017-07-04 12:34:27.110971642 +0100
++++ dockernet/util/install.sh	2017-07-04 12:01:38.214574152 +0100
+@@ -21,6 +21,9 @@
+   *) BUILD_DIR=$BUILD_DIR;;
+ esac
+ 
++BUILD_DIR=$BUILD_DIR/build
++mkdir -p $BUILD_DIR
++
+ # Location of CONFIG_NET_NS-enabled kernel(s)
+ KERNEL_LOC=http://www.openflow.org/downloads/mininet
+ 

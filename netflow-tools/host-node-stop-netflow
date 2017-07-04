@@ -1,0 +1,43 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 <The base folder to save netflow records>\n"
+	exit 1
+}
+
+######################################
+
+[ $# != 1 ] && usage
+DST_DIR_ROOT=$1
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+HOST_ID=$(hostname)
+SWITCHES=$($SCRIPTS_HOME/get-switch-names)
+if [ -z "$SWITCHES" ] ; then
+	echo -e "\nError: Cannot find Mininet switches"
+	echo -e "       Please reset OpenVSwitch and kill ncapd manually\n"
+	exit 1
+fi
+
+for s in $SWITCHES ; do
+	echo -e "\nCleaning up switch $s on host $HOST_ID ..."
+	ovs-vsctl clear Bridge $s netflow
+done
+
+sleep 3
+
+for s in $SWITCHES ; do
+	echo -e "\nStopping nfcapd for switch $s on host $HOST_ID ...\n"
+	RUN_DIR=$DST_DIR_ROOT/$HOST_ID/$s/netflow/run
+	#DATA_DIR=$DST_DIR_ROOT/$HOST_ID/$s/netflow/data
+	PID_FILE=$RUN_DIR/nfcapd.$s.pid
+	if [ -e $PID_FILE ] ; then
+		kill `cat $PID_FILE`		
+	else
+		echo "nfcapd PID file not found: $PID_FILE"
+		echo -e "Please kill nfcapd manually\n"
+	fi
+done
+

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 [-u <username>] <script name> [<args>]\n"
+	exit 1
+}
+
+USER=root
+if [ "$1" = "-u" ] ; then
+	[ $# = 1 ] && usage
+	USER=$2
+	shift 2
+fi
+
+[ $# = 0 ] && usage
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+TEST_SH=$SCRIPTS_HOME/$1
+shift
+
+START_TIME=`date +%Y/%m/%d-%T`
+START_SECOND=`date +%s`
+
+su -l $USER -c "$TEST_SH $*"
+
+END_TIME=`date +%Y/%m/%d-%T`
+END_SECOND=`date +%s`
+DURATION_SECOND=`expr $END_SECOND - $START_SECOND`
+DURATION_MINUTE=`expr $DURATION_SECOND / 60`
+DURATION_HOUR=`expr $DURATION_MINUTE / 60`
+
+echo -e "\nHadoop job has finished."
+echo -e "Start time: $START_TIME, End time: $END_TIME, Duration: ${DURATION_SECOND}s/${DURATION_MINUTE}m/${DURATION_HOUR}h."
+

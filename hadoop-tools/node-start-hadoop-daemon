@@ -1,0 +1,50 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\n$0 namenode | secondarynamenode | datanode | resourcemanager | proxyserver | historyserver | nodemanager\n"
+	exit 1
+}
+
+######
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+HDUSER_PREFIX=/home/hduser
+HADOOP_PREFIX=$HDUSER_PREFIX/hadoop
+HADOOP_BIN=$HADOOP_PREFIX/bin
+HADOOP_SBIN=$HADOOP_PREFIX/sbin
+HADOOP_CONF_DIR=$HADOOP_PREFIX/etc/hadoop
+
+case "$1" in 
+# HDFS
+namenode)
+	su -l hdfs -c "HADOOP_PREFIX=$HADOOP_PREFIX $HADOOP_SBIN/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script $HADOOP_BIN/hdfs start namenode"
+	;;
+secondarynamenode)
+	su -l hdfs -c "HADOOP_PREFIX=$HADOOP_PREFIX $HADOOP_SBIN/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script $HADOOP_BIN/hdfs start secondarynamenode"
+	;;
+datanode)
+	su -l hdfs -c "HADOOP_PREFIX=$HADOOP_PREFIX $HADOOP_SBIN/hadoop-daemon.sh --config $HADOOP_CONF_DIR --script $HADOOP_BIN/hdfs start datanode"
+	;;
+# YARN
+resourcemanager)
+	su -l yarn -c "HADOOP_PREFIX=$HADOOP_PREFIX $HADOOP_SBIN/yarn-daemon.sh --config $HADOOP_CONF_DIR start resourcemanager"
+	;;
+proxyserver)
+	su -l yarn -c "HADOOP_PREFIX=$HADOOP_PREFIX $HADOOP_SBIN/yarn-daemon.sh --config $HADOOP_CONF_DIR start proxyserver"
+	;;
+nodemanager)
+	su -l yarn -c "HADOOP_PREFIX=$HADOOP_PREFIX $HADOOP_SBIN/yarn-daemon.sh --config $HADOOP_CONF_DIR start nodemanager"
+	;;
+# MapReduce
+historyserver)
+	su -l mapred -c "HADOOP_PREFIX=$HADOOP_PREFIX $HADOOP_SBIN/mr-jobhistory-daemon.sh --config $HADOOP_CONF_DIR start historyserver"
+	;;
+*)
+	echo -e "\nERROR: Unknown options"
+	usage
+	;;
+esac
+
+

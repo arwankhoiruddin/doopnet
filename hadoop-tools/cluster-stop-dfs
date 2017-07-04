@@ -1,0 +1,24 @@
+#!/bin/bash
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+HDUSER_PREFIX=/home/hduser
+HADOOP_PREFIX=$HDUSER_PREFIX/hadoop
+HADOOP_BIN=$HADOOP_PREFIX/bin
+HADOOP_SBIN=$HADOOP_PREFIX/sbin
+HADOOP_CONF_DIR=$HADOOP_PREFIX/etc/hadoop
+
+HADOOP_CLUSTER_CONFIG_DIR=$HDUSER_PREFIX/cluster-config
+
+# Start HDFS 
+echo -e "\nStoping DFS namenode ..."
+pdsh -R ssh -w  ^$HADOOP_CLUSTER_CONFIG_DIR/namenode $SCRIPTS_HOME/node-stop-hadoop-daemon namenode
+
+echo -e "\nStoping DFS secondary namenode ..."
+pdsh -R ssh -w  ^$HADOOP_CLUSTER_CONFIG_DIR/secondarynamenode $SCRIPTS_HOME/node-stop-hadoop-daemon secondarynamenode
+
+echo -e "\nStoping DFS datanodes ..."
+pdsh -R ssh -w  ^$HADOOP_CLUSTER_CONFIG_DIR/datanode $SCRIPTS_HOME/node-stop-hadoop-daemon datanode
+
+

@@ -1,0 +1,89 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 \n\t<doopnet-nodes home, e.g. /home/sdn/host-exchange/test1> \n\t<node home name prefix, e.g. d> \n\t<node number: e.g. 10> \n\t<switch home name prefix, e.g. vidsdn/s> \n\t<switch number, e.g. 3> \n\t<output dir>\n\t[<reducer host numbers: e.g. 2 5 10>]\n"
+	exit 1
+}
+
+get_host_i_stats() {
+i=$1
+h="h$i"
+NODE_NETFLOW_DATA_DIR=$NODE_HOME_PREFIX$i/netflow/data/
+
+FILTER_FILE=$OUTPUT_DIR/nfdump.filter.reducer.$h
+echo src port 13562 and dst host 10.0.0.$i > $FILTER_FILE
+
+NODE_TRAFFIC_FILE="$OUTPUT_DIR/reducer-traffics.$h"
+NODE_STATS_FILE="$OUTPUT_DIR/reducer-stats.$h"
+
+nfdump -f $FILTER_FILE -R $NODE_NETFLOW_DATA_DIR -w $NODE_TRAFFIC_FILE
+# stats for the reducer received data from each mapper
+nfdump -r $NODE_TRAFFIC_FILE  -s srcip > $NODE_STATS_FILE
+# stats for the reducer total received data
+nfdump -r $NODE_TRAFFIC_FILE -s dstip >> $STATS_SUMMARY_FILE
+
+j=1
+while [ 1 ] ; do
+s="s$j"
+SWITCH_NETFLOW_DATA_DIR=$SWITCH_HOME_PREFIX$j/netflow/data
+
+SWITCH_TRAFFIC_FILE="$OUTPUT_DIR/reducer-traffics.$h.$s"
+SWITCH_STATS_FILE="$OUTPUT_DIR/reducer-stats.$h.$s"
+SWITCH_STATS_SUMMARY_FILE="$OUTPUT_DIR/reducer-stats.hall.$s"
+
+[ $i = 1 ] && >$SWITCH_STATS_SUMMARY_FILE
+
+nfdump -f $FILTER_FILE -R $SWITCH_NETFLOW_DATA_DIR -w $SWITCH_TRAFFIC_FILE
+# stats for the reducer received data from each mapper
+nfdump -r $SWITCH_TRAFFIC_FILE  -s srcip > $SWITCH_STATS_FILE
+# stats for the reducer total received data
+nfdump -r $SWITCH_TRAFFIC_FILE -s dstip >> $SWITCH_STATS_SUMMARY_FILE
+
+j=$(expr $j + 1)
+[ $j -gt $SWITCH_NUM ] && break
+done
+}
+
+######################################
+
+[ $# -lt 6 ]  && usage
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+MINIDOOP_NODE_HOME=$1
+NODE_HOME_NAME_PREFIX=$2	#hduser.cluster.h
+NODE_HOME_PREFIX=$MINIDOOP_NODE_HOME/$NODE_HOME_NAME_PREFIX
+NODE_NUM=$3
+SWITCH_HOME_NAME_PREFIX=$4	#hduser.cluster.s
+SWITCH_HOME_PREFIX=$MINIDOOP_NODE_HOME/$SWITCH_HOME_NAME_PREFIX
+SWITCH_NUM=$5
+OUTPUT_DIR=$6
+shift 6
+REDUCERS="ALL"
+[ $# != 0 ] && REDUCERS=$*
+
+#check_number $NODE_NUM
+#check_number $SWITCH_NUM
+
+[ ! -e $MINIDOOP_NODE_HOME ] && echo -e "\nError: $MINIDOOP_NODE_HOME doesn't exist\n" && exit 1
+[ -e $OUTPUT_DIR ] && echo -e "\nError: $OUTPUT_DIR exists\n" && exit 1
+
+mkdir -p $OUTPUT_DIR
+
+STATS_SUMMARY_FILE="$OUTPUT_DIR/reducer-stats.hall"
+>$STATS_SUMMARY_FILE
+
+if [ "$REDUCERS" = "ALL" ] ; then
+hi=1
+while [ 1 ] ; do
+	get_host_i_stats $hi
+	hi=$(expr $hi + 1)
+	[ $hi -gt $NODE_NUM ] && break
+done
+else
+for hi in $REDUCERS ; do 
+	get_host_i_stats $hi
+done
+fi
+

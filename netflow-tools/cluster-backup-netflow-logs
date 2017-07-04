@@ -1,0 +1,27 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 <dst folder name (will be placed under /mnt/host-exchange)>\n"
+	exit 1
+}
+
+[ $# != 1 ] && usage
+DST_DIR=$1
+
+#####################################
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+tmplist="/tmp/backup-netflow-logs.hosts"
+>$tmplist
+cat /etc/hosts | while read ip name ; do
+	[ -z "$name" ] && continue
+	[ "$name" = "localhost" ] && continue
+	echo $name >> $tmplist
+done
+
+pdsh -R ssh -w  ^$tmplist $SCRIPTS_HOME/node-backup-netflow-logs $DST_DIR
+
+rm -f $tmplist
+

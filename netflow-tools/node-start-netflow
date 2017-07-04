@@ -1,0 +1,31 @@
+#!/bin/bash
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+NFCAPD_FILE_ROTATE_INTERVAL=300
+NETFLOW_ACTIVE_FLOW_LIFETIME=300
+
+NETFLOW_MONITOR_CONFIG=$SCRIPTS_HOME/netflow-monitor.config
+[ -e $NETFLOW_MONITOR_CONFIG ] && . $NETFLOW_MONITOR_CONFIG
+
+HDUSER_PREFIX=/home/hduser
+RUN_DIR=${HDUSER_PREFIX}/netflow/run
+
+NODE_ID=$(hostname)
+
+echo -e "\nStarting netflow in host $NODE_ID..."
+
+INTERFACES=`$SCRIPTS_HOME/get-interface-names`
+
+NFCAPD_PORT_START=10001
+NFCAPD_PORT=$NFCAPD_PORT_START
+
+for name in $INTERFACES ; do
+	DATA_DIR=${HDUSER_PREFIX}/netflow/data/$name
+	mkdir -p $DATA_DIR
+	nfcapd -w -D -p $NFCAPD_PORT -t $NFCAPD_FILE_ROTATE_INTERVAL -P $RUN_DIR/nfcapd.$name.pid -I ${NODE_ID}-$name -l $DATA_DIR 
+	fprobe -e $NETFLOW_ACTIVE_FLOW_LIFETIME -i $name 127.0.0.1:${NFCAPD_PORT} 
+	NFCAPD_PORT=`expr $NFCAPD_PORT + 1`
+done
+

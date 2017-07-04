@@ -1,0 +1,27 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0: <server ip> [<port>]\n"
+	exit 1
+}
+
+###############
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+[ $# != 1 ] && [ $# != 2 ] && usage
+
+SERVER_IP=$1
+SERVER_PORT=5001
+DURATION=60
+
+[ $# = 2 ] && SERVER_PORT=$2
+
+while [ 1 ] ; do
+	iperf -c $SERVER_IP -p $SERVER_PORT -t $DURATION
+
+	#TASK_STATUS=`ps ax | grep -c 'run-hadoop-tes[t]'`
+	#[ $TASK_STATUS -lt 1 ] && break
+done
+

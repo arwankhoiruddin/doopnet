@@ -1,0 +1,16 @@
+#!/bin/bash
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+HDUSER_PREFIX=/home/hduser
+LOG_DIR=${HDUSER_PREFIX}/log
+
+NODE_ID=$(hostname)
+echo -e "\nRemoving Hadoop logs in host $NODE_ID..."
+
+rm -f $LOG_DIR/hdfs/*
+rm -f $LOG_DIR/mapred/*
+rm -f $LOG_DIR/yarn/* 2>/dev/null
+rm -rf $LOG_DIR/yarn/userlogs/*
+

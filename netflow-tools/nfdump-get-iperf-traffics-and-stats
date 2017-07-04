@@ -1,0 +1,85 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 \n\t<doopnet-nodes home, e.g. /home/sdn/host-exchange/test1> \n\t<node home name prefix, e.g. d> \n\t<node number: e.g. 10> \n\t<switch home name prefix, e.g. vidsdn/s> \n\t<switch number, e.g. 3> \n\t<output dir>\n"
+	exit 1
+}
+
+######################################
+
+[ $# != 6 ]  && usage
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+DOOPNET_NODE_HOME=$1
+NODE_HOME_NAME_PREFIX=$2	#hduser.cluster.h or d
+NODE_HOME_PREFIX=$DOOPNET_NODE_HOME/$NODE_HOME_NAME_PREFIX
+NODE_NUM=$3
+SWITCH_HOME_NAME_PREFIX=$4	#hduser.cluster.s
+SWITCH_HOME_PREFIX=$DOOPNET_NODE_HOME/$SWITCH_HOME_NAME_PREFIX
+SWITCH_NUM=$5
+OUTPUT_DIR=$6
+
+#check_number $NODE_NUM
+#check_number $SWITCH_NUM
+
+[ ! -e $DOOPNET_NODE_HOME ] && echo -e "\nError: $DOOPNET_NODE_HOME doesn't exist\n" && exit 1
+[ -e $OUTPUT_DIR ] && echo -e "\nError: $OUTPUT_DIR exists\n" && exit 1
+
+mkdir -p $OUTPUT_DIR
+
+TX_STATS_SUMMARY_FILE="$OUTPUT_DIR/iperf-stats-tx.hall"
+RX_STATS_SUMMARY_FILE="$OUTPUT_DIR/iperf-stats-rx.hall"
+
+>$TX_STATS_SUMMARY_FILE
+>$RX_STATS_SUMMARY_FILE
+
+i=1
+while [ 1 ] ; do
+h="h$i"
+NODE_NETFLOW_DATA_DIR=$NODE_HOME_PREFIX$i/netflow/data/
+
+TX_FILTER="port 5001 and src host 10.0.0.$i"
+RX_FILTER="port 5001 and dst host 10.0.0.$i" 
+
+TX_STATS_FILE="$OUTPUT_DIR/iperf-stats-tx.$h"
+RX_STATS_FILE="$OUTPUT_DIR/iperf-stats-rx.$h"
+
+# For the total data that the host sent to other hosts
+nfdump -R $NODE_NETFLOW_DATA_DIR "$TX_FILTER" -s srcip > $TX_STATS_FILE
+nfdump -R $NODE_NETFLOW_DATA_DIR "$TX_FILTER" -s srcip >> $TX_STATS_SUMMARY_FILE
+
+# For the total data that the host received from other hosts
+nfdump -R $NODE_NETFLOW_DATA_DIR "$RX_FILTER" -s dstip > $RX_STATS_FILE
+nfdump -R $NODE_NETFLOW_DATA_DIR "$RX_FILTER" -s dstip >> $RX_STATS_SUMMARY_FILE
+
+j=1
+while [ 1 ] ; do
+s="s$j"
+SWITCH_NETFLOW_DATA_DIR=$SWITCH_HOME_PREFIX$j/netflow/data
+
+TX_SWITCH_STATS_FILE="$OUTPUT_DIR/iperf-stats-tx.$h.$s"
+TX_SWITCH_STATS_SUMMARY_FILE="$OUTPUT_DIR/iperf-stats-tx.hall.$s"
+
+RX_SWITCH_STATS_FILE="$OUTPUT_DIR/iperf-stats-rx.$h.$s"
+RX_SWITCH_STATS_SUMMARY_FILE="$OUTPUT_DIR/iperf-stats-rx.hall.$s"
+
+[ $i = 1 ] && >$TX_SWITCH_STATS_SUMMARY_FILE && >$RX_SWITCH_STATS_SUMMARY_FILE
+
+# For the total data that the host sent to other hosts
+nfdump -R $SWITCH_NETFLOW_DATA_DIR "$TX_FILTER" -s srcip > $TX_SWITCH_STATS_FILE
+nfdump -R $SWITCH_NETFLOW_DATA_DIR "$TX_FILTER" -s srcip >> $TX_SWITCH_STATS_SUMMARY_FILE
+
+# For the total data that the host received from other hosts
+nfdump -R $SWITCH_NETFLOW_DATA_DIR "$RX_FILTER" -s dstip > $RX_SWITCH_STATS_FILE
+nfdump -R $SWITCH_NETFLOW_DATA_DIR "$RX_FILTER" -s dstip >> $RX_SWITCH_STATS_SUMMARY_FILE
+
+j=$(expr $j + 1)
+[ $j -gt $SWITCH_NUM ] && break
+done
+
+i=$(expr $i + 1)
+[ $i -gt $NODE_NUM ] && break
+done
+

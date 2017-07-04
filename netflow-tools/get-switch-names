@@ -1,0 +1,21 @@
+#!/bin/bash
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+INTERFACES=$($SCRIPTS_HOME/get-interface-names)
+
+for i in $INTERFACES ; do
+	case "$i" in 
+	*-eth*)
+		s=$(IFS="-"; set $i; echo $1)
+		if [[ "$SWITCHES" != *"$s"* ]] ; then
+			status=$(ifconfig $s 2>/dev/null)
+			[ "$?" = "0" ] && SWITCHES="$SWITCHES $s"
+		fi
+		;;
+	esac
+done
+
+echo $SWITCHES
+

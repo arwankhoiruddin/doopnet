@@ -1,0 +1,24 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 [<user to run Hadoop application, default: root>]\n"
+	exit 1
+}
+
+######
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+USER="root"
+[ $# = 1 ] && USER=$1
+
+$SCRIPTS_HOME/hdfs-format
+sleep 1
+$SCRIPTS_HOME/cluster-start-dfs
+sleep 1
+$SCRIPTS_HOME/create-mapred-staging-dir
+$SCRIPTS_HOME/create-hadoop-app-user-dir $USER
+sleep 1
+$SCRIPTS_HOME/cluster-start-yarn
+

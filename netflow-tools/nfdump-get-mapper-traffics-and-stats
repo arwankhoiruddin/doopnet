@@ -1,0 +1,76 @@
+#!/bin/bash
+
+usage() {
+	echo -e "\nUsage: $0 \n\t<doopnet-nodes home, e.g. /home/sdn/host-exchange/test1> \n\t<node home name prefix, e.g. d> \n\t<node number: e.g. 10> \n\t<switch home name prefix, e.g. vidsdn/s> \n\t<switch number, e.g. 3> \n\t<output dir>\n"
+	exit 1
+}
+
+######################################
+
+[ $# != 6 ]  && usage
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+DOOPNET_NODE_HOME=$1
+NODE_HOME_NAME_PREFIX=$2	#hduser.cluster.h or d
+NODE_HOME_PREFIX=$DOOPNET_NODE_HOME/$NODE_HOME_NAME_PREFIX
+NODE_NUM=$3
+SWITCH_HOME_NAME_PREFIX=$4	#hduser.cluster.s
+SWITCH_HOME_PREFIX=$DOOPNET_NODE_HOME/$SWITCH_HOME_NAME_PREFIX
+SWITCH_NUM=$5
+OUTPUT_DIR=$6
+
+#check_number $NODE_NUM
+#check_number $SWITCH_NUM
+
+[ ! -e $DOOPNET_NODE_HOME ] && echo -e "\nError: $DOOPNET_NODE_HOME doesn't exist\n" && exit 1
+[ -e $OUTPUT_DIR ] && echo -e "\nError: $OUTPUT_DIR exists\n" && exit 1
+
+mkdir -p $OUTPUT_DIR
+
+STATS_SUMMARY_FILE="$OUTPUT_DIR/mapper-stats.hall"
+>$STATS_SUMMARY_FILE
+
+i=1
+while [ 1 ] ; do
+h="h$i"
+NODE_NETFLOW_DATA_DIR=$NODE_HOME_PREFIX$i/netflow/data/
+
+FILTER_FILE=$OUTPUT_DIR/nfdump.filter.mapper.$h
+echo src port 13562 and src host 10.0.0.$i > $FILTER_FILE
+
+NODE_TRAFFIC_FILE="$OUTPUT_DIR/mapper-traffics.$h"
+NODE_STATS_FILE="$OUTPUT_DIR/mapper-stats.$h"
+
+nfdump -f $FILTER_FILE -R $NODE_NETFLOW_DATA_DIR -w $NODE_TRAFFIC_FILE
+# for the data that the mapper sends to each reducer
+nfdump -r $NODE_TRAFFIC_FILE  -s dstip > $NODE_STATS_FILE
+# for the total data that the mapper sends to all reducers
+nfdump -r $NODE_TRAFFIC_FILE -s srcip >> $STATS_SUMMARY_FILE
+
+j=1
+while [ 1 ] ; do
+s="s$j"
+SWITCH_NETFLOW_DATA_DIR=$SWITCH_HOME_PREFIX$j/netflow/data
+
+SWITCH_TRAFFIC_FILE="$OUTPUT_DIR/mapper-traffics.$h.$s"
+SWITCH_STATS_FILE="$OUTPUT_DIR/mapper-stats.$h.$s"
+SWITCH_STATS_SUMMARY_FILE="$OUTPUT_DIR/mapper-stats.hall.$s"
+
+[ $i = 1 ] && >$SWITCH_STATS_SUMMARY_FILE
+
+nfdump -f $FILTER_FILE -R $SWITCH_NETFLOW_DATA_DIR -w $SWITCH_TRAFFIC_FILE
+# for the data that the mapper sends to each reducer
+nfdump -r $SWITCH_TRAFFIC_FILE  -s dstip > $SWITCH_STATS_FILE
+# for the total data that the mapper sends to all reducers
+nfdump -r $SWITCH_TRAFFIC_FILE -s srcip >> $SWITCH_STATS_SUMMARY_FILE
+
+j=$(expr $j + 1)
+[ $j -gt $SWITCH_NUM ] && break
+done
+
+i=$(expr $i + 1)
+[ $i -gt $NODE_NUM ] && break
+done
+

@@ -1,0 +1,26 @@
+#!/bin/bash
+
+SCRIPTS_HOME="$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P )"
+DOOPNET_HOME=$( cd -P "$SCRIPTS_HOME/../" && pwd -P )
+
+HDUSER_PREFIX=/home/hduser
+HADOOP_PREFIX=$HDUSER_PREFIX/hadoop
+HADOOP_BIN=$HADOOP_PREFIX/bin
+HADOOP_SBIN=$HADOOP_PREFIX/sbin
+HADOOP_CONF_DIR=$HADOOP_PREFIX/etc/hadoop
+
+HADOOP_CLUSTER_CONFIG_DIR=$HDUSER_PREFIX/cluster-config
+
+# Start YARN
+echo -e "\nStarting YARN resourcemanager ..."
+pdsh -R ssh -w  ^$HADOOP_CLUSTER_CONFIG_DIR/resourcemanager $SCRIPTS_HOME/node-start-hadoop-daemon resourcemanager
+
+echo -e "\nStarting YARN proxyserver ..."
+pdsh -R ssh -w  ^$HADOOP_CLUSTER_CONFIG_DIR/proxyserver $SCRIPTS_HOME/node-start-hadoop-daemon proxyserver
+
+echo -e "\nStarting MapReduce historyserver ..."
+pdsh -R ssh -w  ^$HADOOP_CLUSTER_CONFIG_DIR/historyserver $SCRIPTS_HOME/node-start-hadoop-daemon historyserver
+
+echo -e "\nStarting YARN nodemanagers ..."
+pdsh -R ssh -w  ^$HADOOP_CLUSTER_CONFIG_DIR/nodemanager $SCRIPTS_HOME/node-start-hadoop-daemon nodemanager
+
