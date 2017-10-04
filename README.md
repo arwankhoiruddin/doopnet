@@ -39,7 +39,7 @@ patch -p1 <../containernet.patch
 
 # Follow the instructions on the Containernet page: https://github.com/mpeuster/containernet. 
 cd doopnet/containernet/ansible/
-sudo ansible-playbook install.xml 
+sudo ansible-playbook install.yml 
 ```
 
 ### 3) Build a Docker image for Doopnet 
