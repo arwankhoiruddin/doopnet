@@ -3,8 +3,8 @@ Doopnet
 
 ## Introduction
 #### Doopnet: Deploying a Hadoop cluster on Docker containers over Mininet and monitoring the Hadoop network traffic through Netflow
-* Tested on Ubuntu-14.04
-* Require: Docker Engine and Docker image Ubuntu-14.04
+* Tested on Ubuntu-14.04.5 LTS & Linux Kernel-4.14.0 with aufs4 (https://github.com/sfjro/aufs4-linux)
+* Require: Docker CE and Docker image Ubuntu-14.04
 
 #### Doopnet is based on Containernet (formerly called Dockernet) and Hadoop 2.7.1 
 * Containernet: https://github.com/mpeuster/containernet (Ref: Manuel Peuster, Holger Karl, and Steven van Rossem. "MeDICINE: Rapid Prototyping of Production-Ready Network Services in Multi-PoP Environments." in IEEE Conference on Network Function Virtualization and Software Defined Network (NFV-SDN), 2016. Link: http://ieeexplore.ieee.org/document/7919490/)
@@ -19,9 +19,9 @@ For Doopnet design details, please check the paper below. Please cite this paper
 
 ### 1) Install Docker Engine and pull Docker image Ubuntu-14.04
 ```
-# Install Docker Engine. 
+# Install docker-ce. 
 # Follow the instructions for Ubuntu Trusty 14.04 [LTS] on the page below:
-# https://docs.docker.com/engine/installation/linux/ubuntulinux/
+# https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/
 
 # Pull Docker image Ubuntu-14.04. 
 # https://docs.docker.com/engine/reference/commandline/pull/
